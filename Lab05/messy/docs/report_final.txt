@@ -1,0 +1,3 @@
+Weekly progress report - Week 3
+Status: In progress
+Topics covered: Prompt engineering basics

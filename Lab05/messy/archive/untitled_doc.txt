@@ -1,0 +1,4 @@
+Ideas for final project:
+1. Chatbot for course Q&A
+2. Image classifier
+3. RAG document search

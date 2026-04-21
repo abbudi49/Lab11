@@ -1,0 +1,56 @@
+=== MANY-TIME PAD SIMULATION ===
+
+Shared Key (hex): d3d2403126e49b0008cbfca11204e15f2577282cfb7e01e9099cf866c5f4
+
+-----------------------------------
+
+Message 1:
+Plaintext (text): The secret meeting is at dawn.
+Plaintext (hex) : 54686520736563726574206d656574696e67206973206174206461776e2e
+Ciphertext (hex): 87ba25115581f8726dbfdccc776195364b100845885e609d29f89911abda
+
+Message 2:
+Plaintext (text): The target is moving tonight.
+Plaintext (hex) : 54686520746172676574206973206d6f76696e6720746f6e696768742e
+Ciphertext (hex): 87ba25115285e9676dbfdcc861248c30531e464bdb0a6e8760fb9012eb
+
+Message 3:
+Plaintext (text): Attack from the northern flank
+Plaintext (hex) : 41747461636b2066726f6d20746865206e6f72746865726e20666c616e6b
+Ciphertext (hex): 92a63450458fbb667aa49181666c847f4b185a58931b738729fa9407ab9f
+
+Message 4:
+Plaintext (text): Retreat to the safehouse now.
+Plaintext (hex) : 5265747265617420746f207468652073616665686f757365206e6f772e
+Ciphertext (hex): 81b734434385ef207ca4dcd57a61c12c44114d44940b728c29f29711eb
+
+Message 5:
+Plaintext (text): Hello Alice, this is Bob here
+Plaintext (hex) : 48656c6c6f20416c6963652c207468697320697320426f622068657265
+Ciphertext (hex): 9bb72c5d49c4da6c61a8998d327089365657415fdb3c6e8b29f49d14a0
+
+Message 6:
+Plaintext (text): Hello Carol, this is Eve here
+Plaintext (hex) : 48656c6c6f204361726f6c2c2074686973206973204576652068657265
+Ciphertext (hex): 9bb72c5d49c4d8617aa4908d327089365657415fdb3b778c29f49d14a0
+
+Message 7:
+Plaintext (text): Password for the vault is abc
+Plaintext (hex) : 50617373776f726420666f7220746865207661756c7420697320616263
+Ciphertext (hex): 83b33342518be96428ad93d33270893a05014959970a21807abc9904a6
+
+Message 8:
+Plaintext (text): Launch the payload on my mark
+Plaintext (hex) : 4c61756e636820746865207061796c6f6164206f6e206d79206d61726b
+Ciphertext (hex): 9fb3355f458cbb7460aedcd1737d8d3044130843955e6c9029f19914ae
+
+Message 9:
+Plaintext (text): Cancel the operation entirely
+Plaintext (hex) : 43616e63656c20746865206f7065726174696f6e20656e746972656c79
+Ciphertext (hex): 90b32e524388bb7460aedcce6261933e511e4742db1b6f9d60ee9d0abc
+
+Message 10:
+Plaintext (text): Send backup to the rendezvous
+Plaintext (hex) : 53656e64206261636b757020746f207468652072656e64657a766f7573
+Ciphertext (hex): 80b72e550686fa6363be8c81666bc12b4d12085e9e10658c73ea9713b6
+
