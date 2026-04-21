@@ -101,15 +101,19 @@ def rag_ask(question: str) -> str:
     except Exception:
         return "RAG support not available (missing src.rag)."
 
-    chunks = search_guides(question, n_results=3)
+    # Increased n_results to 5 for more context
+    chunks = search_guides(question, n_results=5)
     if not chunks:
         return "No guide content found. Add files to guides/ and rebuild the index."
 
     # Build a strict system prompt that confines the model to the provided chunks.
     sources = "\n\n---\n\n".join(chunks)
+    
+    # Custom system prompt for RAG that allows more detail
     system = (
-        TRAVEL_SYSTEM_PROMPT
-        + "\n\nAnswer the user's question using ONLY the information in the provided source chunks. "
+        "You are a helpful travel guide assistant. "
+        "Answer the user's question as thoroughly as possible using ONLY the information in the provided source chunks. "
+        "Use the information provided to give a complete and helpful answer. "
         "If the answer is not contained in the chunks, respond: 'I don't know from the guides.'\n\n"
         "SOURCE CHUNKS:\n"
         + sources
