@@ -3,7 +3,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import streamlit as st
 from src.storage import load_trips
-from src.ai_assistant import ask, TRAVEL_SYSTEM_PROMPT, client, MODEL
+from src.ai_assistant import ask, TRAVEL_SYSTEM_PROMPT, client, MODEL, rag_ask
+from src.rag import ensure_index
 
 # Page Config
 st.set_page_config(page_title="Trip Notes AI", page_icon="✈️", layout="wide")
@@ -17,6 +18,9 @@ if "search_history" not in st.session_state:
     st.session_state["search_history"] = []
 if "agent_history" not in st.session_state:
     st.session_state["agent_history"] = []
+
+# Build/ensure RAG index at startup
+ensure_index()
 
 # Constants
 MAX_TURNS = 8
@@ -102,7 +106,38 @@ with tabs[0]:
         st.rerun()
 
 with tabs[1]:
-    st.info("Coming soon — Exercise 3")
+    st.subheader("Search My Guides")
+    st.caption("Answers grounded in your guides/ documents.")
+
+    # Display search history
+    for message in st.session_state["search_history"]:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    # Search input
+    if search_input := st.chat_input("Search your guides...", key="search_input"):
+        # Display user message
+        with st.chat_message("user"):
+            st.markdown(search_input)
+        
+        # Add to history
+        st.session_state["search_history"].append({"role": "user", "content": search_input})
+
+        # Generate response
+        with st.chat_message("assistant"):
+            with st.spinner("Searching guides..."):
+                try:
+                    assistant_response = rag_ask(search_input)
+                    st.markdown(assistant_response)
+                    # Add to history
+                    st.session_state["search_history"].append({"role": "assistant", "content": assistant_response})
+                except Exception as e:
+                    st.error(f"Error during search: {e}")
+
+    # Clear search button
+    if st.button("Clear search", key="clear_search"):
+        st.session_state["search_history"] = []
+        st.rerun()
 
 with tabs[2]:
     st.info("Coming soon — Exercise 4")
