@@ -21,7 +21,8 @@ def main():
         print("\n--- AI Assistant ---")
         print("[8] Search my guides (RAG)")
         print("[9] Ask general travel AI")
-        print("[10] Generate trip briefing")
+        print("[10] AI Travel Agent (ReAct)")
+        print("[11] Generate trip briefing")
         print("[R] Rebuild search index")
         print("[Q] Quit")
         
@@ -142,6 +143,18 @@ def main():
 
         elif choice == "10":
             try:
+                from src.tools import run_agent
+            except Exception as e:
+                print(f"Agent support not available: {e}")
+                continue
+            q = input("Enter question for the AI Travel Agent: ")
+            print("\nThinking...")
+            ans = run_agent(q)
+            print("\n=== Agent Response ===")
+            print(ans)
+
+        elif choice == "11":
+            try:
                 from src.ai_assistant import generate_trip_briefing
             except Exception:
                 print("AI support not available.")
@@ -155,7 +168,7 @@ def main():
             for i, trip in enumerate(trips, 1):
                 print(f"{i}. {trip.name}")
             
-            n = int(input("Select trip number for briefing: "))
+            n = int(input("Select number for briefing: "))
             trip = collection.get_by_index(n - 1)
             print(f"\nGenerating briefing for {trip.name}...")
             briefing = generate_trip_briefing(trip.name, trip.country, trip.notes)
