@@ -3,19 +3,24 @@ import requests
 import sys
 import os
 
-# Allow importing from the same directory if run as a script
+# Allow importing from src if run as a script
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.rag import search_guides
-from src.ai_assistant import client, MODEL, TRAVEL_SYSTEM_PROMPT
+try:
+    from src.rag import search_guides
+except ImportError:
+    # Fallback if src.rag is not in the path
+    def search_guides(query, n_results=3):
+        return []
 
-def budget_breakdown(total_budget: float, duration_days: int) -> str:
+def budget_breakdown(city: str, duration_days: int, total_budget: float) -> str:
     """
     Splits a total budget into daily averages and categories.
     
     Args:
-        total_budget (float): Total trip budget in USD.
+        city (str): The destination city.
         duration_days (int): Number of days for the trip.
+        total_budget (float): Total trip budget in USD.
         
     Returns:
         str: A formatted string showing the budget breakdown.
@@ -32,7 +37,7 @@ def budget_breakdown(total_budget: float, duration_days: int) -> str:
     emergency = total_budget * 0.10
     
     breakdown = (
-        f"--- BUDGET BREAKDOWN (${total_budget:,.2f} over {duration_days} days) ---\n"
+        f"--- BUDGET BREAKDOWN for {city} (${total_budget:,.2f} over {duration_days} days) ---\n"
         f"Daily Average: ${daily_avg:,.2f}/day\n\n"
         f"Categories:\n"
         f"- Accommodation (40%): ${accommodation:,.2f}\n"
@@ -90,10 +95,11 @@ TOOL_DEFINITIONS = [
             "parameters": {
                 "type": "object",
                 "properties": {
+                    "city": {"type": "string", "description": "The name of the destination city"},
                     "total_budget": {"type": "number", "description": "Total budget for the trip in USD"},
                     "duration_days": {"type": "integer", "description": "Number of days the trip lasts"},
                 },
-                "required": ["total_budget", "duration_days"],
+                "required": ["city", "total_budget", "duration_days"],
             },
         },
     },
@@ -127,85 +133,85 @@ TOOL_DEFINITIONS = [
     }
 ]
 
-def run_agent(user_prompt: str) -> str:
+def run_agent(prompt: str) -> str:
     """
-    A simple ReAct agent that uses the OpenAI tool calling API.
+    A ReAct agent that uses tools to answer travel questions.
     """
-    if not client:
-        return "AI Agent Error: No API client configured."
+    try:
+        from src.ai_assistant import client, MODEL, TRAVEL_SYSTEM_PROMPT
+    except ImportError:
+        return "AI Agent support not available (could not import client/MODEL)."
 
-    system_prompt = TRAVEL_SYSTEM_PROMPT + "\nUse the available tools whenever they are relevant to answer the user's question. For example, use 'budget_breakdown' if the user asks for a budget analysis, 'get_weather' for weather inquiries, and 'search_guides_tool' for specific destination info from your guides."
+    if not client:
+        return "AI Agent support not available (OpenAI client not initialized)."
 
     messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_prompt},
+        {"role": "system", "content": TRAVEL_SYSTEM_PROMPT},
+        {"role": "user", "content": prompt}
     ]
 
-    # Map function names to actual Python functions
     available_tools = {
         "budget_breakdown": budget_breakdown,
         "get_weather": get_weather,
         "search_guides_tool": search_guides_tool,
     }
 
-    # Limit to 5 turns to prevent infinite loops
-    for i in range(5):
+    # ReAct loop (max 5 iterations)
+    for _ in range(5):
         try:
-            # Force tool usage if keywords are found and it's the first turn
-            tool_choice = "auto"
-            if i == 0:
-                if "budget" in user_prompt.lower() or "breakdown" in user_prompt.lower():
-                    tool_choice = {"type": "function", "function": {"name": "budget_breakdown"}}
-                elif "weather" in user_prompt.lower():
-                    tool_choice = {"type": "function", "function": {"name": "get_weather"}}
-                elif "guide" in user_prompt.lower() or "search" in user_prompt.lower():
-                    tool_choice = {"type": "function", "function": {"name": "search_guides_tool"}}
-
             response = client.chat.completions.create(
                 model=MODEL,
                 messages=messages,
                 tools=TOOL_DEFINITIONS,
-                tool_choice=tool_choice,
+                tool_choice="auto"
             )
         except Exception as e:
             return f"Agent Error: {e}"
 
         msg = response.choices[0].message
-        messages.append(msg)
+        
+        # Handle cases where msg.content might be None but tool_calls exist
+        if msg.content:
+            messages.append({"role": "assistant", "content": msg.content})
+        else:
+            # For OpenAI API, tool_calls must be attached to an assistant message
+            # If content is None, we still need to record the assistant's intent
+            messages.append({"role": "assistant", "content": None, "tool_calls": msg.tool_calls})
 
         if not msg.tool_calls:
-            # If no tool calls, this is the final answer
-            return msg.content
+            return msg.content or "The agent finished without an answer."
 
-        # Process each tool call
-        for tc in msg.tool_calls:
-            name = tc.function.name
-            args = json.loads(tc.function.arguments)
+        # Process tool calls
+        for tool_call in msg.tool_calls:
+            name = tool_call.function.name
+            args = json.loads(tool_call.function.arguments)
             
             print(f"[Tool call] {name}({args})")
             
-            func = available_tools.get(name)
-            if func:
-                result = func(**args)
+            tool_func = available_tools.get(name)
+            if tool_func:
+                try:
+                    result = tool_func(**args)
+                except Exception as e:
+                    result = f"Error executing tool {name}: {e}"
             else:
-                result = f"Error: Tool '{name}' not found."
+                result = f"Error: Tool {name} not found."
             
-            # Print a snippet of result
-            result_snippet = (result[:100] + '...') if len(result) > 100 else result
-            print(f"[Tool result] {result_snippet}")
+            print(f"[Tool result] {result[:100]}..." if len(result) > 100 else f"[Tool result] {result}")
             
             messages.append({
                 "role": "tool",
-                "tool_call_id": tc.id,
+                "tool_call_id": tool_call.id,
+                "name": name,
                 "content": result
             })
 
-    return "Agent Error: Max turns reached without final answer."
+    return "Agent reached maximum iteration limit."
 
 if __name__ == "__main__":
     # Simple test cases
     print("Testing budget_breakdown:")
-    print(budget_breakdown(1000, 5))
+    print(budget_breakdown("Tokyo", 5, 1000))
     print("\nTesting get_weather (Tokyo):")
     print(get_weather("Tokyo"))
     print("\nTesting search_guides_tool (Paris):")
