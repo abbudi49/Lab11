@@ -5,6 +5,7 @@ import streamlit as st
 from src.storage import load_trips
 from src.ai_assistant import ask, TRAVEL_SYSTEM_PROMPT, client, MODEL, rag_ask
 from src.rag import ensure_index
+from src.tools import run_agent, TOOL_DEFINITIONS
 
 # Page Config
 st.set_page_config(page_title="Trip Notes AI", page_icon="✈️", layout="wide")
@@ -140,4 +141,32 @@ with tabs[1]:
         st.rerun()
 
 with tabs[2]:
-    st.info("Coming soon — Exercise 4")
+    st.subheader("AI Travel Agent")
+    st.write("The agent uses tools: budget calculation, live weather, and guide search.")
+
+    agent_query = st.text_area("Your question:", placeholder="e.g. I have $1200 for 8 days in Tokyo. Check the weather and break down my budget.")
+
+    if st.button("Ask the Agent"):
+        if agent_query:
+            with st.spinner("Agent is working..."):
+                answer = run_agent(agent_query)
+                st.markdown(answer)
+                
+                # Tools expander
+                with st.expander("▶ Tools available to this agent"):
+                    for tool in TOOL_DEFINITIONS:
+                        st.write(f"• {tool['function']['name']}")
+                
+                # Save to history
+                st.session_state["agent_history"].append({"question": agent_query, "answer": answer})
+        else:
+            st.warning("Please enter a question first.")
+
+    # History
+    if st.session_state["agent_history"]:
+        st.write("---")
+        st.write("Previous queries this session:")
+        for item in reversed(st.session_state["agent_history"]):
+            label = f"Q: {item['question'][:60]}..." if len(item['question']) > 60 else f"Q: {item['question']}"
+            with st.expander(label):
+                st.markdown(item['answer'])
